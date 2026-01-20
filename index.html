@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QIS College | Lost & Found Portal</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --qis-blue: #0f172a;
+            --qis-accent: #facc15;
+            --success-green: #16a34a;
+            --danger-red: #ef4444;
+            --bg: #f8fafc;
+            --white: #ffffff;
+            --border: #e2e8f0;
+        }
+
+        body { margin: 0; font-family: 'Inter', sans-serif; background-color: var(--bg); color: #334155; }
+
+        header {
+            background: var(--qis-blue);
+            color: white;
+            padding: 15px;
+            text-align: center;
+            border-bottom: 4px solid var(--qis-accent);
+        }
+
+        .nav-container { display: flex; justify-content: center; margin: 20px 0; }
+        .pill-nav { background: #e2e8f0; padding: 4px; border-radius: 50px; display: flex; gap: 2px; }
+        .pill-nav button {
+            border: none; padding: 10px 22px; border-radius: 40px; cursor: pointer;
+            font-weight: 600; font-size: 0.85rem; transition: 0.2s; color: #64748b; background: transparent;
+        }
+        .pill-nav button.active { background: var(--white); color: var(--qis-blue); box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+
+        .container { max-width: 1100px; margin: 0 auto 50px; padding: 0 15px; }
+        .section { display: none; animation: fadeIn 0.3s ease; }
+        .section.active { display: block; }
+
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+        .card { background: white; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        .card img { width: 100%; height: 180px; object-fit: cover; }
+        .card-body { padding: 15px; }
+        
+        .btn-claim { 
+            background: var(--success-green); color: white; border: none; width: 100%; 
+            padding: 10px; border-radius: 6px; cursor: pointer; font-weight: bold; margin-top: 10px;
+        }
+
+        #claimModal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(4px);
+        }
+
+        .modal-content {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 450px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2);
+            animation: slideIn 0.3s ease;
+        }
+
+        #camera-container { width: 100%; background: #000; border-radius: 8px; margin-bottom: 10px; display: none; overflow: hidden; }
+        #video { width: 100%; transform: scaleX(-1); }
+        #photoPreview { width: 100%; border-radius: 8px; display: none; margin-bottom: 10px; }
+
+        .history-card { background: white; border-radius: 12px; padding: 25px; border: 1px solid var(--border); overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; min-width: 600px; }
+        th { background: #f8fafc; text-align: left; padding: 15px; font-size: 0.85rem; color: #64748b; border-bottom: 2px solid #edf2f7; }
+        td { padding: 15px; border-bottom: 1px solid #f1f5f9; font-size: 0.9rem; }
+        
+        .form-box { background: white; padding: 30px; border-radius: 15px; border: 1px solid var(--border); }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
+        input, textarea { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; font-family: inherit; margin-bottom: 10px; }
+        .btn-main { background: var(--qis-blue); color: white; border: none; padding: 15px; border-radius: 8px; width: 100%; cursor: pointer; font-weight: bold; }
+        .btn-cancel { background: #e2e8f0; color: #475569; border: none; padding: 12px; border-radius: 8px; width: 100%; cursor: pointer; margin-top: 10px; font-weight: 600; }
+        
+        .btn-view-photo { background: #6366f1; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideIn { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    </style>
+</head>
+<body>
+
+<header>
+    <div style="display:flex; align-items:center; justify-content:center; gap:10px;">
+        <img src="C:\Users\nagab\OneDrive\Pictures\QIS-logo.jpeg" alt="QIS" style="height:45px; background:white; border-radius:4px; padding:2px;">
+        <h1 style="margin:0; font-size: 1.5rem;">QIS COLLEGE PORTAL</h1>
+    </div>
+</header>
+
+<div class="nav-container">
+    <div class="pill-nav">
+        <button id="nav-view" class="active" onclick="showSection('view')">Browse Items</button>
+        <button id="nav-upload" onclick="showSection('upload')">Report Found</button>
+        <button id="nav-history" onclick="showSection('history')">History</button>
+    </div>
+</div>
+
+<div class="container">
+    <div id="view" class="section active">
+        <div class="grid" id="itemsList"></div>
+    </div>
+
+    <div id="upload" class="section">
+        <div class="form-box">
+            <h2 style="margin-top:0"><i class="fas fa-pen-nib"></i> Register Found Item</h2>
+            <div class="form-row">
+                <input id="itemName" placeholder="Item Name">
+                <input id="fRoll" placeholder="Founder Roll No.">
+            </div>
+            <div class="form-row">
+                <input id="fPhone" type="tel" placeholder="Founder Mobile Number">
+                <input id="fSection" placeholder="Section (e.g. CSE-C)">
+            </div>
+            <div class="form-row">
+                <input id="fTeacher" placeholder="Class Teacher Name">
+            </div>
+            <textarea id="itemDesc" rows="3" placeholder="Where was it found?"></textarea>
+            <label style="font-size: 0.8rem; font-weight:bold; display:block; margin-bottom:5px;">Item Photo:</label>
+            <input type="file" id="itemImg" accept="image/*">
+            <button class="btn-main" onclick="handleUpload()">Submit to QIS Registry</button>
+        </div>
+    </div>
+
+    <div id="history" class="section">
+        <div class="history-card">
+            <h2>Claimed Items History</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Receiver Name</th>
+                        <th>Roll No</th>
+                        <th>Item</th>
+                        <th>Handover Photo</th>
+                        <th>Date Received</th>
+                        <th style="text-align:center">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="historyTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div id="claimModal">
+    <div class="modal-content">
+        <h2 style="margin-top:0; color: var(--qis-blue);"><i class="fas fa-user-check"></i> Handover Details</h2>
+        <input type="text" id="recName" placeholder="Receiver's Full Name">
+        <input type="text" id="recRoll" placeholder="Receiver's Roll Number">
+        <input type="text" id="recSec" placeholder="Receiver's Section">
+
+        <label style="font-size:0.8rem; font-weight:bold;">Capture Handover Photo</label>
+        <div id="camera-container">
+            <video id="video" autoplay playsinline></video>
+        </div>
+        <img id="photoPreview" alt="Handover Preview">
+        
+        <button id="startCamBtn" class="btn-main" style="background:#6366f1; margin-bottom:10px;" onclick="startCamera()">
+            <i class="fas fa-camera"></i> Open Camera
+        </button>
+        
+        <button id="captureBtn" class="btn-main" style="background:var(--success-green); display:none; margin-bottom:10px;" onclick="takePhoto()">
+            <i class="fas fa-circle"></i> Capture Photo
+        </button>
+
+        <button class="btn-main" onclick="confirmClaim()">Complete Handover</button>
+        <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+    </div>
+</div>
+
+<script>
+    const ADMIN_PASSCODE = "1234"; 
+    let items = JSON.parse(localStorage.getItem("qisItems")) || [];
+    let historyData = JSON.parse(localStorage.getItem("qisHistory")) || [];
+    let currentClaimIndex = null;
+    let handoverImageData = null;
+    let stream = null;
+
+    function showSection(id) {
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        document.querySelectorAll('.pill-nav button').forEach(b => b.classList.remove('active'));
+        document.getElementById('nav-' + id).classList.add('active');
+        if(id === 'view') renderItems();
+        if(id === 'history') renderHistory();
+    }
+
+    function renderItems() {
+        const list = document.getElementById("itemsList");
+        if(items.length === 0) {
+            list.innerHTML = "<div style='grid-column:1/-1; text-align:center; padding:50px; color:#94a3b8;'>Registry is empty.</div>";
+            return;
+        }
+        list.innerHTML = items.map((item, index) => `
+            <div class="card">
+                <img src="${item.img}">
+                <div class="card-body">
+                    <h3 style="margin:0">${item.name}</h3>
+                    <p style="font-size:0.85rem; color:#64748b;">${item.desc}</p>
+                    <hr style="border:0; border-top:1px solid #eee; margin:10px 0">
+                    <div style="font-size:0.75rem;">
+                        <b>Founder Roll:</b> ${item.fRoll}<br>
+                        <b>Founder Phone:</b> <a href="tel:${item.fPhone}" style="color:var(--success-green); text-decoration:none; font-weight:bold;">${item.fPhone}</a><br>
+                        <b>Teacher:</b> ${item.fTeacher}
+                    </div>
+                    <button class="btn-claim" onclick="openClaimModal(${index})">Mark as Claimed</button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function renderHistory() {
+        const table = document.getElementById("historyTableBody");
+        table.innerHTML = historyData.map((h, index) => `
+            <tr>
+                <td><strong>${h.name}</strong></td>
+                <td>${h.roll}</td>
+                <td>${h.thing}</td>
+                <td>
+                    <button class="btn-view-photo" onclick="viewProtectedPhoto(${index})">
+                        <i class="fas fa-lock"></i> View Photo
+                    </button>
+                </td>
+                <td>${h.date}</td>
+                <td style="text-align:center">
+                    <button class="btn-delete" onclick="protectedDelete(${index})" style="background:#fee2e2; color:#ef4444; border:none; padding:5px 8px; border-radius:4px; cursor:pointer;">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function viewProtectedPhoto(index) {
+        const pass = prompt("Enter Admin Passcode to view this photo:");
+        if (pass === ADMIN_PASSCODE) {
+            const photoUrl = historyData[index].handoverPhoto;
+            const newTab = window.open();
+            newTab.document.write(`<img src="${photoUrl}" style="max-width:100%; border-radius:10px;">`);
+        } else { alert("Incorrect Passcode!"); }
+    }
+
+    async function startCamera() {
+        const video = document.getElementById('video');
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
+            video.srcObject = stream;
+            document.getElementById('camera-container').style.display = "block";
+            document.getElementById('startCamBtn').style.display = "none";
+            document.getElementById('captureBtn').style.display = "block";
+        } catch (err) { alert("Camera access denied."); }
+    }
+
+    function takePhoto() {
+        const video = document.getElementById('video');
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.translate(canvas.width, 0); ctx.scale(-1, 1);
+        ctx.drawImage(video, 0, 0);
+        handoverImageData = canvas.toDataURL('image/jpeg', 0.6);
+        document.getElementById('photoPreview').src = handoverImageData;
+        document.getElementById('photoPreview').style.display = "block";
+        document.getElementById('camera-container').style.display = "none";
+        document.getElementById('captureBtn').style.display = "none";
+        if(stream) stream.getTracks().forEach(t => t.stop());
+    }
+
+    function openClaimModal(index) {
+        currentClaimIndex = index;
+        document.getElementById("claimModal").style.display = "flex";
+    }
+
+    function closeModal() {
+        if(stream) stream.getTracks().forEach(t => t.stop());
+        document.getElementById("claimModal").style.display = "none";
+        document.getElementById("photoPreview").style.display = "none";
+        document.getElementById("camera-container").style.display = "none";
+        document.getElementById("startCamBtn").style.display = "block";
+        document.getElementById("captureBtn").style.display = "none";
+        handoverImageData = null;
+    }
+
+    function confirmClaim() {
+        const rName = document.getElementById("recName").value;
+        const rRoll = document.getElementById("recRoll").value;
+        if(!rName || !rRoll || !handoverImageData) return alert("Fill all details & take photo.");
+        const claimedItem = items.splice(currentClaimIndex, 1)[0];
+        historyData.unshift({
+            name: rName, roll: rRoll, thing: claimedItem.name, 
+            date: new Date().toLocaleString(), handoverPhoto: handoverImageData
+        });
+        localStorage.setItem("qisItems", JSON.stringify(items));
+        localStorage.setItem("qisHistory", JSON.stringify(historyData));
+        closeModal(); showSection('history');
+    }
+
+    function handleUpload() {
+        const name = document.getElementById("itemName").value;
+        const phone = document.getElementById("fPhone").value;
+        const file = document.getElementById("itemImg").files[0];
+        
+        if(!name || !phone || !file) return alert("Please provide Item Name, Founder Mobile, and Photo.");
+
+        const reader = new FileReader();
+        reader.onload = () => {
+            items.unshift({
+                name: name,
+                fRoll: document.getElementById("fRoll").value,
+                fPhone: phone,
+                fSection: document.getElementById("fSection").value,
+                fTeacher: document.getElementById("fTeacher").value,
+                desc: document.getElementById("itemDesc").value,
+                img: reader.result
+            });
+            localStorage.setItem("qisItems", JSON.stringify(items));
+            document.getElementById("itemName").value = "";
+            document.getElementById("fPhone").value = "";
+            document.getElementById("itemImg").value = "";
+            showSection('view');
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function protectedDelete(index) {
+        if (prompt("Enter Passcode to Delete:") === ADMIN_PASSCODE) {
+            historyData.splice(index, 1);
+            localStorage.setItem("qisHistory", JSON.stringify(historyData));
+            renderHistory();
+        }
+    }
+    renderItems();
+</script>
+
+</body>
+</html>
